@@ -140,12 +140,3 @@ class Environment:
         if key is not None:
             return pyautogui.press(key)
 
-time.sleep(2)
-env = Environment()
-state = env.reset()
-
-for i in range(1000):
-    obs, reward, done = env.step('NONE')
-    print(f"step {i}: reward={reward}, done={done}")
-    if done:
-        break
