@@ -108,25 +108,27 @@ class Environment:
         return delta
 
     def is_done(self):
-        current = self.crop_screen(self.grab_screen(), self.score_region)
-        current = cv2.cvtColor(current, cv2.COLOR_BGRA2GRAY)
+        crop = self.crop_screen(self.grab_screen(), self.score_region)
+        result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
+        if not result:
+            return False
+        try:
+            current = int(result[0])
+        except ValueError:
+            return False
+
         if self.last_score is None:
             self.last_score = current
             return False
-        diff = cv2.absdiff(self.last_score, current)
-        matching = np.sum(diff > 5)
-        total = current.size
-        similarity = (matching / total) * 100
-
-        self.last_score = current
-
-        if similarity > 90:
+        if current == self.last_score:
             self.stall_count += 1
         else:
             self.stall_count = 0
 
-        return self.stall_count > self.stall_threshold
-
+        if self.stall_count >= self.stall_threshold:
+            print("GAME OVER")
+            return True
+        return False
 
     def do_action(self, choice):
         action_table = {
