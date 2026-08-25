@@ -14,20 +14,33 @@ class Agent:
         self.min_eps = min_eps
         self.eps_decay = eps_decay
         self.lr = lr
-        self.model = Net.Net()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.actions = ['UP', 'DOWN', 'LEFT', 'RIGHT', 'NONE']
         self.memory = deque(maxlen=10000)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model = Net.Net().to(self.device)
+        self.target_model = Net.Net().to(self.device)
+        self.target_model.load_state_dict(self.model.state_dict())
+        self.target_model.eval()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+
+    #def save_model(self):
+     #   torch.save({
+      #      #todo
+       # })
 
     def select_action(self, state):
         if np.random.rand() < self.eps:
             return self.actions[np.random.randint(len(self.actions))]
         else:
             with torch.no_grad():
-                pass
+                state = state.unsqueeze(0).to(self.device)
+                q_values = self.model(state)
+                action_idx = q_values.argmax(dim=1).item()
+            return self.actions[action_idx]
 
     def epsilon_decay_func(self):
         self.eps = max(self.min_eps, self.eps * self.eps_decay)
+
+
 
 

@@ -58,7 +58,7 @@ class Environment:
         done = self.is_done()
         reward = coins_delta * 0.5
         if done:
-            reward -= 100
+            reward -= 10
             self.game_state = "MENU"
         observation = self.frames_to_tensor()
         return observation, reward, done
