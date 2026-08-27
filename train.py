@@ -1,3 +1,4 @@
+from mpmath import monitor
 from shapely.speedups import available
 from torch.distributed.elastic import agent
 from environment import Environment
@@ -8,11 +9,16 @@ import webbrowser
 import pyautogui
 from pick import pick
 import keyboard
+import mss
+import numpy as np
+import cv2
 
 def traininng_loop(agent, env, start_episode=0):
     episode = start_episode
 
     while True:
+        episode += 1
+        print(f"GAME {episode}")
         state = env.reset()
         done = False
         total_reward = 0
@@ -24,13 +30,16 @@ def traininng_loop(agent, env, start_episode=0):
             agent.learn()
             total_reward += reward
             steps += 1
-            print(f'Step: {steps} | Reward: {reward} | Done: {done}')
+            print(f'Step: {steps} | Reward: {reward} | Done: {done} | Action: {action} | Epsilon: {agent.eps}')
+            state = next_state
+        print("GAME OVER")
 
         agent.epsilon_decay_func()
         if episode % 10 == 0:
             agent.update_target_memory()
         if episode % 50 == 0:
-            pass
+            os.mkdir(f'models/{episode}Episodes')
+            agent.save_checkpoint(f'models/{episode}Episodes/model_ep{episode}.pt')
 
 def list_models(path):
     available_models = []

@@ -8,7 +8,7 @@ import Net
 from collections import deque
 
 class Agent:
-    def __init__(self, gamma = 0.95, eps=1, min_eps = 0.01, eps_decay = 0.995, lr=1e-4):
+    def __init__(self, gamma = 0.9, eps=1, min_eps = 0.01, eps_decay = 0.995, lr=1e-4):
         self.gamma = gamma
         self.eps = eps
         self.min_eps = min_eps

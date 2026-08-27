@@ -14,12 +14,14 @@ class Environment:
         self.coins = 0
         self.frames = deque(maxlen=4)
         self.score_region = {"top": 27, "left": 1740, "width": 165 , "height": 50}
+        self.pause_region = {"top": 35, "left": 25, "width": 65 , "height": 50}
         self.coins_region = {"top": 100, "left": 1775, "width": 92 , "height": 50}
         self.gameplay_region = {"top": 240, "left": 350, "width": 1220 , "height": 840}
         self.last_score = None
         self.stall_count = 0
-        self.stall_threshold = 10
+        self.stall_threshold = 2
         self.game_state = "MENU"
+        self.pause_button = cv2.imread("imgs/pause.png", cv2.IMREAD_GRAYSCALE)
         self.play_button_template = cv2.imread("imgs/play.png", cv2.IMREAD_GRAYSCALE)
         self.play_text = cv2.imread("imgs/first_play.png", cv2.IMREAD_GRAYSCALE)
         self.reader = easyocr.Reader(['en'], gpu=True)
@@ -35,7 +37,7 @@ class Environment:
             time.sleep(0.2)
         if (self.is_play_button() or self.is_start_text()):
             pyautogui.press('enter')
-            time.sleep(1.5)
+            time.sleep(2.2)
             self.game_state = "GAME"
             print('----STARTING GAME----')
             for i in range(4):
@@ -73,7 +75,7 @@ class Environment:
         done = self.is_done()
         if done:
             reward -= 10
-            time.sleep(1.8)
+            time.sleep(4.8)
             self.game_state = "MENU"
         else:
             reward += 0.5
@@ -126,6 +128,17 @@ class Environment:
         return delta
 
     def is_done(self):
+        crop = self.crop_screen(self.grab_screen(), self.pause_region)
+        crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
+        similarity = cv2.matchTemplate(crop, self.pause_button, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, _ = cv2.minMaxLoc(similarity)
+        if max_val > 0.95:
+            return False
+        else:
+            return True
+
+    """""
+    def is_done(self):
         crop = self.crop_screen(self.grab_screen(), self.score_region)
         crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
         result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
@@ -146,9 +159,9 @@ class Environment:
         self.last_score = current
 
         if self.stall_count >= self.stall_threshold:
-            print("GAME OVER")
             return True
         return False
+    """
 
     def do_action(self, choice):
         action_table = {
