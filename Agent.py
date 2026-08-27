@@ -23,11 +23,6 @@ class Agent:
         self.target_model.eval()
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
-    #def save_model(self):
-     #   torch.save({
-      #      #todo
-       # })
-
     def select_action(self, state):
         if np.random.rand() < self.eps:
             return self.actions[np.random.randint(len(self.actions))]

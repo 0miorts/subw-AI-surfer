@@ -18,7 +18,7 @@ class Environment:
         self.gameplay_region = {"top": 240, "left": 350, "width": 1220 , "height": 840}
         self.last_score = None
         self.stall_count = 0
-        self.stall_threshold = 5
+        self.stall_threshold = 10
         self.game_state = "MENU"
         self.play_button_template = cv2.imread("imgs/play.png", cv2.IMREAD_GRAYSCALE)
         self.reader = easyocr.Reader(['en'], gpu=True)
@@ -37,6 +37,9 @@ class Environment:
             time.sleep(1.5)
             self.game_state = "GAME"
             print('----STARTING GAME----')
+            for _ in range(4):
+                self.get_gameplay_screen()
+            return self.frames_to_tensor()
 
 
     def is_play_button(self):
@@ -59,7 +62,10 @@ class Environment:
         reward = coins_delta * 0.5
         if done:
             reward -= 10
+            time.sleep(1.5)
             self.game_state = "MENU"
+        else:
+            reward += 0.5
         observation = self.frames_to_tensor()
         return observation, reward, done
 
@@ -84,6 +90,7 @@ class Environment:
 
     def _scan_coins(self):
         crop = self.crop_screen(self.grab_screen(), self.coins_region)
+        crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
         result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
         if not result:
             return None
@@ -109,11 +116,12 @@ class Environment:
 
     def is_done(self):
         crop = self.crop_screen(self.grab_screen(), self.score_region)
+        crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
         result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
         if not result:
             return False
         try:
-            current = int(result[0])
+            current = result
         except ValueError:
             return False
 
@@ -124,6 +132,7 @@ class Environment:
             self.stall_count += 1
         else:
             self.stall_count = 0
+        self.last_score = current
 
         if self.stall_count >= self.stall_threshold:
             print("GAME OVER")
