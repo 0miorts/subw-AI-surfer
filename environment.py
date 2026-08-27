@@ -21,6 +21,7 @@ class Environment:
         self.stall_threshold = 10
         self.game_state = "MENU"
         self.play_button_template = cv2.imread("imgs/play.png", cv2.IMREAD_GRAYSCALE)
+        self.play_text = cv2.imread("imgs/first_play.png", cv2.IMREAD_GRAYSCALE)
         self.reader = easyocr.Reader(['en'], gpu=True)
 
     def reset(self):
@@ -29,15 +30,15 @@ class Environment:
         self.stall_count = 0
         self.frames.clear()
         # ------SKIP MENU----------
-        while not self.is_play_button():
+        while not (self.is_play_button() or self.is_start_text()):
             pyautogui.press('enter')
             time.sleep(0.2)
-        if self.is_play_button():
+        if (self.is_play_button() or self.is_start_text()):
             pyautogui.press('enter')
             time.sleep(1.5)
             self.game_state = "GAME"
             print('----STARTING GAME----')
-            for _ in range(4):
+            for i in range(4):
                 self.get_gameplay_screen()
             return self.frames_to_tensor()
 
@@ -53,16 +54,26 @@ class Environment:
         else:
             return False
 
+    def is_start_text(self):
+        region = {"top": 780, "left": 590, "width": 510, "height": 120}
+        area = self.crop_screen(self.grab_screen(), region)
+        area = cv2.cvtColor(area, cv2.COLOR_BGRA2GRAY)
+        similarity = cv2.matchTemplate(area, self.play_text, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, _ = cv2.minMaxLoc(similarity)
+        if max_val > 0.7:
+            return True
+        else:
+            return False
+
     def step(self, action):
         self.do_action(action)
         self.get_gameplay_screen()
 
-        coins_delta = self.calculate_delta()
+        reward = 0
         done = self.is_done()
-        reward = coins_delta * 0.5
         if done:
             reward -= 10
-            time.sleep(1.5)
+            time.sleep(1.8)
             self.game_state = "MENU"
         else:
             reward += 0.5

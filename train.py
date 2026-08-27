@@ -24,6 +24,7 @@ def traininng_loop(agent, env, start_episode=0):
             agent.learn()
             total_reward += reward
             steps += 1
+            print(f'Step: {steps} | Reward: {reward} | Done: {done}')
 
         agent.epsilon_decay_func()
         if episode % 10 == 0:
@@ -44,6 +45,7 @@ if __name__ == '__main__':
     URL = 'https://subwayonline.io/subway-surfers.embed'
     while True:
         title = "Choose action you want to do: "
+        #Only learning from beginning for now. I will work on rest of them after I'll be somewhat satisfied with learning
         options = ['Learn a model from beginning',
                    'Continue learning of an existing model',
                    'Watch a trained model play']
@@ -56,9 +58,11 @@ if __name__ == '__main__':
                 answer, idx = pick(answers, question, indicator='->')
                 match idx:
                     case 0:
-                        print("Soon your browser will open a game. Please use browser in fullscreen mode!")
+                        print("Soon your browser will open a game. Please use browser in fullscreen mode! "
+                              "Also press a button in the middle so you can see main menu of game!")
                         webbrowser.open(URL)
-                        msg = input("When you will be ready, press enter and go back to your browser. Agent will start soon after...")
+                        msg = input("When you will be ready, press enter and go back to your browser. "
+                                    "Agent will start soon after...")
                         time.sleep(2)
                         agent = Agent()
                         env = Environment()
