@@ -17,7 +17,7 @@ class Environment:
         self.pause_region = {"top": 35, "left": 25, "width": 65 , "height": 50}
         self.coins_region = {"top": 100, "left": 1775, "width": 92 , "height": 50}
         self.gameplay_region = {"top": 240, "left": 350, "width": 1220 , "height": 840}
-        self.last_score = None
+        self.score = 0
         self.stall_count = 0
         self.stall_threshold = 2
         self.game_state = "MENU"
@@ -28,7 +28,7 @@ class Environment:
 
     def reset(self):
         self.coins = 0
-        self.last_score = None
+        self.score = None
         self.stall_count = 0
         self.frames.clear()
         # ------SKIP MENU----------
@@ -43,7 +43,6 @@ class Environment:
             for i in range(4):
                 self.get_gameplay_screen()
             return self.frames_to_tensor()
-
 
     def is_play_button(self):
         region = {"top": 950, "left": 1000, "width": 250 , "height": 70}
@@ -69,12 +68,14 @@ class Environment:
 
     def step(self, action):
         self.do_action(action)
+        time.sleep(0.05)
         self.get_gameplay_screen()
 
         reward = 0
         done = self.is_done()
         if done:
             reward -= 10
+            self.score = self.get_score()
             time.sleep(4.8)
             self.game_state = "MENU"
         else:
@@ -132,7 +133,7 @@ class Environment:
         crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
         similarity = cv2.matchTemplate(crop, self.pause_button, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, _ = cv2.minMaxLoc(similarity)
-        if max_val > 0.95:
+        if max_val > 0.85:
             return False
         else:
             return True
@@ -174,4 +175,17 @@ class Environment:
         key = action_table[choice]
         if key is not None:
             return pyautogui.press(key)
+
+    def get_score(self):
+        crop = self.crop_screen(self.grab_screen(), self.score_region)
+        crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
+        _, crop = cv2.threshold(crop, 200, 255, cv2.THRESH_BINARY)
+        result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
+        if not result:
+            return 0
+        try:
+            score = int(result[0])
+            return score
+        except ValueError:
+            return 0
 
