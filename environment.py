@@ -15,7 +15,6 @@ class Environment:
         self.frames = deque(maxlen=4)
         self.score_region = {"top": 27, "left": 1740, "width": 165 , "height": 50}
         self.pause_region = {"top": 35, "left": 25, "width": 65 , "height": 50}
-        self.coins_region = {"top": 100, "left": 1775, "width": 92 , "height": 50}
         self.gameplay_region = {"top": 240, "left": 350, "width": 1220 , "height": 840}
         self.score = 0
         self.stall_count = 0
@@ -102,32 +101,6 @@ class Environment:
         state = np.array(self.frames, dtype=np.float32) / 255.0
         return torch.tensor(state, dtype=torch.float32)
 
-    def _scan_coins(self):
-        crop = self.crop_screen(self.grab_screen(), self.coins_region)
-        crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
-        result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
-        if not result:
-            return None
-        text = result[0]
-        try:
-            return int(text.strip())
-        except (ValueError, AttributeError):
-            return None
-
-    def calculate_delta(self):
-        coins_now = self._scan_coins()
-        max_delta = 10
-        print(f"OCR read: {coins_now}, previous: {self.coins}")
-        if coins_now is not None and coins_now > self.coins:
-            delta = coins_now - self.coins
-            if delta > max_delta:
-                delta = 0
-            else:
-                self.coins = coins_now
-        else:
-            delta = 0
-        return delta
-
     def is_done(self):
         crop = self.crop_screen(self.grab_screen(), self.pause_region)
         crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
@@ -137,32 +110,6 @@ class Environment:
             return False
         else:
             return True
-
-    """""
-    def is_done(self):
-        crop = self.crop_screen(self.grab_screen(), self.score_region)
-        crop = cv2.cvtColor(crop, cv2.COLOR_BGRA2GRAY)
-        result = self.reader.readtext(crop, allowlist='0123456789', detail=0)
-        if not result:
-            return False
-        try:
-            current = result
-        except ValueError:
-            return False
-
-        if self.last_score is None:
-            self.last_score = current
-            return False
-        if current == self.last_score:
-            self.stall_count += 1
-        else:
-            self.stall_count = 0
-        self.last_score = current
-
-        if self.stall_count >= self.stall_threshold:
-            return True
-        return False
-    """
 
     def do_action(self, choice):
         action_table = {
