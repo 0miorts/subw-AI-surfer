@@ -8,10 +8,7 @@ import os
 import webbrowser
 import pyautogui
 from pick import pick
-import keyboard
-import mss
-import numpy as np
-import cv2
+import pandas as pd
 
 
 def traininng_loop(agent, env, start_episode=0):
@@ -23,6 +20,7 @@ def traininng_loop(agent, env, start_episode=0):
         done = False
         total_reward = 0
         steps = 0
+
         while not done:
             action=agent.select_action(state)
             next_state, reward, done = env.step(action)
@@ -34,7 +32,7 @@ def traininng_loop(agent, env, start_episode=0):
             state = next_state
 
         with open('scores.csv', 'a') as file:
-            file.write(f'{episode}, {env.score}, {agent.eps}\n')
+            file.write(f'{episode},{env.score},{agent.eps}\n')
         print("GAME OVER")
         agent.epsilon_decay_func()
         if episode % 10 == 0:
@@ -88,6 +86,12 @@ def get_newest_model(path):
                 newest = file
     return newest
 
+def delete_rows(newest_model : str, path='scores.csv'):
+    number = int(newest_model[8:len(newest_model)-3])
+    df = pd.read_csv(path, header=None)
+    df_cleaned = df[df[0] <= number]
+    df_cleaned.to_csv(path, index=False, header=False)
+
 if __name__ == '__main__':
     PATH = 'models/'
     URL = 'https://subwayonline.io/subway-surfers.embed'
@@ -131,6 +135,7 @@ if __name__ == '__main__':
                             webbrowser.open(URL)
                             msg = input("When you will be ready, press enter and go back to your browser. "
                                         "Agent will start soon after...")
+                            delete_rows(newest_model)
                             agent = Agent()
                             env = Environment()
                             saved_ep = agent.load_checkpoint(os.path.join(PATH, newest_model))
@@ -174,8 +179,3 @@ if __name__ == '__main__':
                     full_path = os.path.join(PATH, model_name)
                     if os.path.exists(full_path):
                         os.remove(full_path)
-
-
-
-
-
